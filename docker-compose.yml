@@ -1,0 +1,59 @@
+version: "3.8"
+
+services:
+  db_server:
+    image: postgres:15
+    container_name: db_server
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: serverdb
+    ports:
+      - "5433:5432"
+
+  db_client:
+    image: postgres:15
+    container_name: db_client
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: clientdb
+    ports:
+      - "5434:5432"
+
+  symmetricds_server:
+    build: ./symmetricds
+    container_name: symmetricds_server
+    command: bin/sym -e server
+    ports:
+      - "31415:31415"
+    volumes:
+      - ./symmetricds/engines:/opt/symmetricds/engines
+      - ./symmetricds/conf:/opt/symmetricds/conf
+    depends_on:
+      - db_server
+
+  symmetricds_client:
+    build: ./symmetricds
+    container_name: symmetricds_client
+    command: bin/sym -e client
+    ports:
+      - "31416:31416"
+    volumes:
+      - ./symmetricds/engines:/opt/symmetricds/engines
+      - ./symmetricds/conf:/opt/symmetricds/conf
+    depends_on:
+      - db_client
+      - symmetricds_server
+
+  pgadmin:
+    image: dpage/pgadmin4
+    container_name: pgadmin
+    environment:
+      PGADMIN_DEFAULT_EMAIL: admin@admin.com
+      PGADMIN_DEFAULT_PASSWORD: admin
+    ports:
+      - "5050:80"
+    depends_on:
+      - db_server
+      - db_client
